@@ -3,7 +3,7 @@ ACCOUNT_ID=123456789012
 default: ready
 	@echo "USAGE:"
 	@echo "  make cli53のダウンロード"
-	@echo "  make export DNS設定のエクスポート"
+	@echo "  make export ゾーンファイルのエクスポート"
 
 bin/cli53:
 	bin/get-cli53.sh
@@ -15,8 +15,17 @@ check_account_id:
 ready: bin/cli53 check_account_id
 
 export: ready
-	bin/cli53 export --full example.com      > example.com.txt
-	bin/cli53 export --full example.aws      > example.aws.txt
-	bin/cli53 export --full 32.172.in-addr.arpa > 32.172.in-addr.arpa.txt
+	mkdir -p domains
+	@for i in $$( bin/cli53 list --format json | jq -r '.[].Name' ); do \
+		echo "Export [$${i%.}]"; \
+		bin/cli53 export --full $${i%.} > domains/$$i"txt"; \
+	done
 
-.PHONY: default check_account_id ready
+markdown: ready
+	echo "# Route53情報" > README.md
+	echo "" >> README.md
+	./domain2markdown.sh >> README.md
+	echo "" >> README.md
+	echo "[ツールの利用方法](./Usage.md)" >> README.md
+
+.PHONY: default check_account_id ready export
