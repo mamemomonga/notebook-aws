@@ -1,9 +1,6 @@
-ACCOUNT_ID=123456789012
+include AccountID
 
-default: ready
-	@echo "USAGE:"
-	@echo "  make cli53のダウンロード"
-	@echo "  make export ゾーンファイルのエクスポート"
+default: markdown export
 
 bin/cli53:
 	bin/get-cli53.sh
@@ -13,13 +10,6 @@ check_account_id:
 	@echo "AccountIDは正常です $(ACCOUNT_ID)"
 
 ready: bin/cli53 check_account_id
-
-export: ready
-	mkdir -p domains
-	@for i in $$( bin/cli53 list --format json | jq -r '.[].Name' ); do \
-		echo "Export [$${i%.}]"; \
-		bin/cli53 export --full $${i%.} > domains/$$i"txt"; \
-	done
 
 markdown: ready
 	echo "# Route53情報" > README.md

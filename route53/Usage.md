@@ -5,6 +5,4 @@
 # 使い方
 
 	$ make
-	$ make export
-	$ make markdown
 
