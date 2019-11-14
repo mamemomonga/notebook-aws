@@ -1,0 +1,9 @@
+[Unit]
+Description = router setup
+
+[Service]
+ExecStart = /usr/local/router/router.sh
+Type = oneshot
+
+[Install]
+WantedBy = network-online.target

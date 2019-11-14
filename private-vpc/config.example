@@ -1,0 +1,14 @@
+ACCOUNT_ID=123456789012
+VPC_SUBNET="172.32.0.0/16"
+VPC_NAME="theWorld"
+VPC_DOMAIN_NAME="the-world.aws"
+VPC_REV="32.172.in-addr.arpa"
+
+# EC2 Gateway Instance
+#   Ubuntu Server 18.04 LTS (HVM)
+#   SSD Volume Type - ami-0cd744adeca97abb1 (64 ビット x86)
+
+EC2_IMAGE_ID="ami-0cd744adeca97abb1"
+EC2_PRIVATE_IP="172.32.0.10"
+EC2_KEY="my-cool-key-ap-northeast-1"
+
