@@ -14,8 +14,13 @@ ready: bin/cli53 check_account_id
 markdown: ready
 	echo "# Route53情報" > README.md
 	echo "" >> README.md
-	./domain2markdown.sh >> README.md
+	./bin/domain2markdown.sh >> README.md
 	echo "" >> README.md
 	echo "[ツールの利用方法](./Usage.md)" >> README.md
+
+export:
+	rm -rf domains
+	mkdir domains
+	for i in $$(bin/cli53 list --format json | jq -r '.[].Name'); do bin/cli53 export --full $${i%%.} > domains/$${i%%.}.txt; done
 
 .PHONY: default check_account_id ready export
