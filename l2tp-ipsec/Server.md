@@ -4,6 +4,18 @@
 
 ## IPsec-L2TP
 
+項目 | 値
+-----|----
+eth0 のIPアドレス | 172.32.0.10
+VPNのリンクネットワーク | 192.168.2.0/26
+VPNのサーバIPアドレス | 192.168.2.1
+DNSサーバ(AmazonProvidedDNS) | 172.32.0.2
+DNSサーバ(dnsmasq) | 192.168.2.1
+
+[AmazonProvidedDNSはAWSの内部DNSサーバで、VPC IPv4 ネットワークの範囲に 2 をプラスした値です](https://docs.aws.amazon.com/ja_jp/vpc/latest/userguide/VPC_DHCP_Options.html#AmazonDNS)。VPCのCIDRが 172.32.0.0/16 の場合は **172.32.0.2** となります。
+
+以下の例で 
+
 	$ sudo apt install strongswan xl2tpd ike-scan
 
 	$ sudo sh -c 'cat > /etc/ipsec.conf' << 'EOS'
@@ -20,6 +32,11 @@
 	  auto=add
 	  type=transport
 	  authby=secret
+
+	  # Prefer modern cipher suites that allow PFS (Perfect Forward Secrecy)
+	  ike=aes128-sha256-ecp256,aes256-sha384-ecp384,aes128-sha256-modp2048,aes128-sha1-modp2048,aes256-sha384-modp4096,aes256-sha256-modp4096,aes256-sha1-modp4096,aes128-sha256-modp1536,aes128-sha1-modp1536,aes256-sha384-modp2048,aes256-sha256-modp2048,aes256-sha1-modp2048,aes128-sha256-modp1024,aes128-sha1-modp1024,aes256-sha384-modp1536,aes256-sha256-modp1536,aes256-sha1-modp1536,aes256-sha384-modp1024,aes256-sha256-modp1024,aes256-sha1-modp1024!
+
+	  esp=aes128gcm16-ecp256,aes256gcm16-ecp384,aes128-sha256-ecp256,aes256-sha384-ecp384,aes128-sha256-modp2048,aes128-sha1-modp2048,aes256-sha384-modp4096,aes256-sha256-modp4096,aes256-sha1-modp4096,aes128-sha256-modp1536,aes128-sha1-modp1536,aes256-sha384-modp2048,aes256-sha256-modp2048,aes256-sha1-modp2048,aes128-sha256-modp1024,aes128-sha1-modp1024,aes256-sha384-modp1536,aes256-sha256-modp1536,aes256-sha1-modp1536,aes256-sha384-modp1024,aes256-sha256-modp1024,aes256-sha1-modp1024,aes128gcm16,aes256gcm16,aes128-sha256,aes128-sha1,aes256-sha384,aes256-sha256,aes256-sha1!
 	
 	  left=%any
 	  leftsubnet=0.0.0.0/0
@@ -63,7 +80,7 @@ DNSサーバのIPアドレスは、後述のdnsmasqを設定した場合、自�
 	require-mschap-v2
 	noccp
 	
-	ms-dns DNSサーバのIPアドレス
+	ms-dns DNSサーバ
 	defaultroute
 	
 	debug
@@ -100,6 +117,8 @@ DNSサーバのIPアドレスは、後述のdnsmasqを設定した場合、自�
 
 ## dnsmasq
 
+dnsmasqでAmazonProvidedDNSをリレーします。dnsmasqを使わずに、AmazonProvidedDNSを直接指定するだけで済むなら、そちらのほうが楽かもしれません。DNS偽装などができるため便利です。
+
 	$ sudo apt install dnsmasq
 
 	$ sudo sh -c 'cat > /etc/dnsmasq.conf' << 'EOS'
@@ -108,8 +127,6 @@ DNSサーバのIPアドレスは、後述のdnsmasqを設定した場合、自�
 	bind-interfaces
 	no-dhcp-interface=lo,eth0,ppp+
 	EOS
-
-[AWSのDNSサーバはVPC IPv4 ネットワークの範囲に 2 をプラスした値です](https://docs.aws.amazon.com/ja_jp/vpc/latest/userguide/VPC_DHCP_Options.html#AmazonDNS)。VPCのCIDRが 172.32.0.0/16 の場合は **172.32.0.2** となります。
 
 VPCのCIDRを得る
 
@@ -126,5 +143,17 @@ dnsmasq設定続き
 	EOS
 
 	$ sudo systemctl restart dnsmasq
+
+新しい接続があったらdnsmasqを再起動する必要がある(ppp+が有効にならない)
+
+	$ sudo sh -c 'cat > /etc/ppp/ip-up.d/dnsmasq' << 'EOS'
+	#!/bin/sh -e
+	if [ "$IFACE" = "lo" ]; then
+	        exit 0
+	fi
+	service dnsmasq restart
+	EOS
+
+	$ sudo chmod 755 /etc/ppp/ip-up.d/dnsmasq
 
 
